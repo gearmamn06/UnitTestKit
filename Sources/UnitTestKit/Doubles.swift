@@ -138,6 +138,29 @@ extension Spyable {
 }
 
 
+// MARK: - Stub
+
+public protocol Stubbale: Containable { }
+
+extension Stubbale {
+    
+    public func stubbing(_ name: String, value: Any) {
+        self.register(name: name.stub_prefix, value: value)
+    }
+    
+    public func result<Value, Fail: Error>(_ name: String) -> Result<Value, Fail> {
+        
+        if let value: Value = self.resolve(name: name.stub_prefix) {
+            return .success(value)
+        }
+        
+        let defaultError = NSError(domain: "", code: 0, userInfo: nil)
+        let error: Fail = self.resolve(name: name.stub_prefix) ?? defaultError as! Fail
+        return Result<Value, Fail>.failure(error)
+    }
+}
+
+
 // MARK: - Helper extensions
 
 extension Bool {
