@@ -15,10 +15,7 @@ private extension String {
     var spy_prefix: String {
         return "spy_\(self)"
     }
-    var spy_count_prefic: String {
-        return "spy_count_\(self)"
-    }
-    
+
     var stub_prefix: String {
         return "stub_\(self)"
     }
@@ -85,4 +82,69 @@ extension Containable {
 
 // MARK: - Spyable protocol
 
+public protocol Spyable: Containable { }
 
+extension Spyable {
+
+    public func spy(_ name: String) {
+        self.register(name: name.spy_prefix, value: ())
+        self.increaseCallCount(name)
+    }
+    
+    public func spy(_ name: String, args: Any) {
+        self.register(name: name.spy_prefix, value: args)
+        self.increaseCallCount(name)
+    }
+    
+    public func called(_ name: String) -> Bool {
+        if let _ : Void = self.resolve(name: name.spy_prefix) {
+            return true
+        }
+        return false
+    }
+    
+    public func called(_ name: String, times: Int) -> Bool {
+        let countMap: [String: Int] = self.resolve(name: count_key) ?? [:]
+        return (countMap[name] ?? 0) == times
+    }
+    
+    public func called<A: Equatable>(_ name: String, withArgs: A) -> Bool {
+        if let args: A = self.resolve(name: name.spy_prefix) {
+            return args == withArgs
+        }
+        return false
+    }
+    
+    public func called<A>(_ name: String, withArgsVerity: (A) -> Bool) -> Bool {
+        if let args: A = self.resolve(name: name.spy_prefix) {
+            return withArgsVerity(args)
+        }
+        return false
+    }
+}
+
+
+extension Spyable {
+    
+    private var count_key: String {
+        return ".call_count_key"
+    }
+    
+    private func increaseCallCount(_ name: String) {
+        var countMap: [String: Int] = self.resolve(name: count_key) ?? [:]
+        countMap[name] = (countMap[name] ?? 0) + 1
+        self.register(name: count_key, value: countMap)
+    }
+}
+
+
+// MARK: - Helper extensions
+
+extension Bool {
+    
+    public func then(_ action: () -> Void) {
+        if self {
+            action()
+        }
+    }
+}
