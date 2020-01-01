@@ -158,6 +158,16 @@ extension Stubbale {
         let error: Fail = self.resolve(name: name.stub_prefix) ?? defaultError as! Fail
         return Result<Value, Fail>.failure(error)
     }
+    
+    public func resolveValue<Value>(_ name: String) -> Value? {
+        let value: Value? = self.resolve(name: name.stub_prefix)
+        return value
+    }
+    
+    public func resolveFailure<Failure>(_ name: String) -> Failure? {
+        let fail: Failure? = self.resolve(name: name.stub_prefix)
+        return fail
+    }
 }
 
 

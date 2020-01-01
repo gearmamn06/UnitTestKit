@@ -41,3 +41,19 @@ extension Publisher {
         return recorder
     }
 }
+
+
+extension Result {
+    
+    var asFuture: Future<Success, Failure> {
+        return Future { promise in
+            switch self {
+            case .success(let output):
+                promise(.success(output))
+                
+            case .failure(let error):
+                promise(.failure(error))
+            }
+        }
+    }
+}
