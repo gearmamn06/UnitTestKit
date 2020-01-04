@@ -97,7 +97,7 @@ extension StubTests {
     class StubObject: Stubbale {
         
         func download() -> Future<Int, Error> {
-            return self.result("download").asFuture
+            return self.result("download").toFuture
         }
         
         func cancel() -> Result<Void, Never> {
@@ -109,7 +109,7 @@ extension StubTests {
 
 private extension Result {
     
-    var asFuture: Future<Success, Failure> {
+    var toFuture: Future<Success, Failure> {
         return Future { promise in
             switch self {
             case .success(let output):
