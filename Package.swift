@@ -25,5 +25,6 @@ let package = Package(
         .testTarget(
             name: "UnitTestKitTests",
             dependencies: ["UnitTestKit"]),
-    ]
+    ],
+    swiftLanguageVersions: [.v5]
 )
