@@ -13,6 +13,8 @@ public class PublisherDisposeBag {
     
     fileprivate var cancellables: Set<AnyCancellable> = []
     
+    public init() {}
+    
     deinit {
         self.cancellables.forEach {
             $0.cancel()
