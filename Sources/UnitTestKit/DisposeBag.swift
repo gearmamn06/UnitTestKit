@@ -34,7 +34,7 @@ public class PublisherDisposeBag {
 
 extension AnyCancellable {
     
-    func disposed(by disposebag: inout PublisherDisposeBag) {
+    public func disposed(by disposebag: inout PublisherDisposeBag) {
         
         self.store(in: &disposebag.cancellables)
     }

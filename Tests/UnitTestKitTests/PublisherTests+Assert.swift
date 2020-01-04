@@ -87,4 +87,20 @@ extension PublisherTests_Assert {
             return error is DummyError
         }
     }
+    
+    func testPublisherAssert_afterTrigger() {
+        // given
+        let publisher = self.makePublisher()
+        let trigger = PassthroughSubject<Int, Error>()
+        let combined = trigger.prefix(1)
+            .append(publisher)
+        
+        // when
+        // then
+        combined.assert(Array(-1..<10), trigger: {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                trigger.send(-1)
+            }
+        })
+    }
 }
