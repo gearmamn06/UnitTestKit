@@ -20,6 +20,7 @@ extension Publisher {
                        message: StaticString = #function,
                        file: StaticString = #file,
                        line: UInt = #line,
+                       trigger: (() -> Void)? = nil,
                        compare: ([Output]) -> Bool) {
         
         let expect = XCTestExpectation()
@@ -46,6 +47,8 @@ extension Publisher {
             })
         
         let expectations = [expect, expectCount].compactMap{ $0 }
+
+        trigger?()
         waiter.wait(for: expectations, timeout: timeout)
         subscribing.cancel()
         
@@ -62,14 +65,18 @@ extension Publisher where Output: Equatable {
                        countExactly: Bool = false,
                        message: StaticString = #function,
                        file: StaticString = #file,
-                       line: UInt = #line) {
+                       line: UInt = #line,
+                       trigger: (() -> Void)? = nil) {
         
         self.assert(count: expectedValues.count,
                     timeout: timeout,
                     countExactly: countExactly,
                     message: message,
                     file: file,
-                    line: line) { $0 == expectedValues }
+                    line: line,
+                    trigger: trigger) {
+                        $0 == expectedValues
+        }
     }
     
 }
@@ -84,6 +91,7 @@ extension Publisher {
                               message: StaticString = #function,
                               file: StaticString = #file,
                               line: UInt = #line,
+                              trigger: (() -> Void)? = nil,
                               compareFailure: (Failure) -> Bool) {
         
         let expect = XCTestExpectation()
@@ -104,6 +112,7 @@ extension Publisher {
                 
             }, receiveValue: { _ in })
         
+        trigger?()
         waiter.wait(for: [expect], timeout: timeout)
         subscribing.cancel()
         
