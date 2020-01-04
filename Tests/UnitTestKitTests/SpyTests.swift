@@ -42,6 +42,7 @@ extension SpyTests {
         spy.method2(int: 100)
         
         // then
+        XCTAssert(spy.called("method2"))
         XCTAssert(spy.called("method2", withArgs: 100))
     }
     

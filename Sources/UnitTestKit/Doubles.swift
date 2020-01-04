@@ -97,7 +97,7 @@ extension Spyable {
     }
     
     public func called(_ name: String) -> Bool {
-        if let _ : Void = self.resolve(name: name.spy_prefix) {
+        if let _: Any  = self.resolve(name: name.spy_prefix) {
             return true
         }
         return false
