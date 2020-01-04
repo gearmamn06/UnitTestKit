@@ -15,7 +15,7 @@ import XCTest
 extension Publisher {
     
     public func assert(count: Int = 1,
-                       timeout: TimeInterval = 1,
+                       timeout: TimeInterval = TestConsts.timeout,
                        countExactly: Bool = false,
                        message: StaticString = #function,
                        file: StaticString = #file,
@@ -58,7 +58,7 @@ extension Publisher {
 extension Publisher where Output: Equatable {
     
     public func assert(_ expectedValues: [Output],
-                       timeout: TimeInterval = 1,
+                       timeout: TimeInterval = TestConsts.timeout,
                        countExactly: Bool = false,
                        message: StaticString = #function,
                        file: StaticString = #file,
@@ -80,7 +80,7 @@ extension Publisher where Output: Equatable {
 extension Publisher {
     
     public func assertFailure(count: Int = 1,
-                              timeout: TimeInterval = 1,
+                              timeout: TimeInterval = TestConsts.timeout,
                               message: StaticString = #function,
                               file: StaticString = #file,
                               line: UInt = #line,
