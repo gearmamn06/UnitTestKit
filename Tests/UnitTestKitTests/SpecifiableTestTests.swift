@@ -302,6 +302,38 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     }
 }
 
+// MARK: Test Handler to publisher
+
+extension TestSpecifiableTests_usage {
+    
+    func testHandler_valuePassingUsingEscapingClosure() {
+
+        given {
+        }
+        .whenWait { () -> AnyPublisher<Int, Never> in
+            let handler = ClosureEventHandler<Int>()
+            self.sut.pass(value: 100, withEscapingClosure: handler.receiver.send)
+            return handler.eraseToAnyPublisher()
+        }
+        .then(assert: { value in
+            (value == 100).assert()
+        })
+    }
+
+    func testHandler_valuesPassingUsingNonEscapingClosure() {
+        given {
+        }
+        .whenWait { () -> AnyPublisher<Int, Never> in
+            let handler = ClosureEventHandler<Int>()
+            self.sut.pass(value: 100, withNonEscapingClosure: handler.receiver.send)
+            return handler.eraseToAnyPublisher()
+        }
+        .then(assert: { value in
+            (value == 100).assert()
+        })
+    }
+}
+
 // MARK: - Doubles
 
 fileprivate protocol FileHandler {
@@ -408,5 +440,15 @@ extension ResourceManager {
         
         return self.fileHandler
             .read(path: path)
+    }
+    
+    func pass(value: Int, withEscapingClosure closure: @escaping (Int) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            closure(value)
+        }
+    }
+    
+    func pass(value: Int, withNonEscapingClosure closure: (Int) -> Void) {
+        closure(value)
     }
 }
