@@ -11,7 +11,7 @@ import Combine
 @testable import UnitTestKit
 
 
-class TestSpecifiableTests: BaseTestCase, TestSpecifiable {
+class SpecifiableTestTests: BaseTestCase, SpecifiableTest {
     
     struct DummyError: Error {}
  
@@ -32,7 +32,7 @@ class TestSpecifiableTests: BaseTestCase, TestSpecifiable {
 }
 
 
-extension TestSpecifiableTests {
+extension SpecifiableTestTests {
     
     func test_waitPublisherEventsAndAssert() {
         
@@ -47,6 +47,22 @@ extension TestSpecifiableTests {
             expect.fulfill()
         }
 
+        wait(for: [expect], timeout: self.timeout)
+    }
+    
+    func test_waitSingleEventAndAssert() {
+        
+        let expect = expectation(description: "assert runs")
+        
+        given(wait: self.makeFuture(100, delay: 0.3)) {
+        }
+        .when {
+        }
+        .then(assert:  { value in
+            (value == 100).assert()
+            expect.fulfill()
+        })
+        
         wait(for: [expect], timeout: self.timeout)
     }
     
@@ -152,7 +168,7 @@ extension TestSpecifiableTests {
 
 
 
-extension TestSpecifiableTests {
+extension SpecifiableTestTests {
     
     func test_publisher_eventCollecting() {
         
@@ -213,7 +229,7 @@ extension TestSpecifiableTests {
 // MARK: - Usage
 
 
-class TestSpecifiableTests_usage: BaseTestCase, TestSpecifiable {
+class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
 
     private var sut: ResourceManager!
     private var stubFileHandler: StubFileManager!

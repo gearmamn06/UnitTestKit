@@ -31,10 +31,10 @@ public struct UnitTestAct<Waiting, Response> {
 }
 
 
-public protocol TestSpecifiable {}
+public protocol SpecifiableTest {}
 
 
-extension TestSpecifiable {
+extension SpecifiableTest {
     
     public func given(_ setup: () -> Void) -> UnitTestArrange<Void> {
         setup()
@@ -81,6 +81,18 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
             return
         }
         assert(values)
+    }
+    
+    public func then(timeout: TimeInterval = TestConsts.timeout,
+                     assert: (Waiting.Output) -> Void) {
+        
+        let _values = self.arrange.waiting
+            .wait(1, timeout: timeout, triger: self.action)
+        guard let values = _values, let first = values.first else {
+            XCTFail("no event occurred")
+            return
+        }
+        assert(first)
     }
     
     public func thenFail(take: Int = 1,
