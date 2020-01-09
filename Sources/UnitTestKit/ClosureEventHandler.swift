@@ -42,7 +42,7 @@ public class ClosureEventHandler<T> {
 
 extension ClosureEventHandler {
     
-    func eraseToAnyPublisher() -> AnyPublisher<T, Never> {
+    public func eraseToAnyPublisher() -> AnyPublisher<T, Never> {
         
         let previousEvents = self.buffer.publisher
             .map{ $0 }

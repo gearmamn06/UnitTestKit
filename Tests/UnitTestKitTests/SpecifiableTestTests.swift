@@ -300,6 +300,20 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
             (value == "dummy_data").assert()
         }
     }
+    
+    func testResourceManager_loadFileUsingClosure() {
+        
+        let handler = ClosureEventHandler<String?>()
+        given(wait: handler.eraseToAnyPublisher()) {
+            self.stubFileHandler.stubbing("read:closure", value: "dummy_data")
+        }
+        .when {
+            self.sut.loadFile(path: "dummy_path", completed: handler.receiver.send)
+        }
+        .then { value in
+            (value == "dummy_data").assert()
+        }
+    }
 }
 
 // MARK: Test Handler to publisher
@@ -342,6 +356,8 @@ fileprivate protocol FileHandler {
     
     func read(path: String) -> Future<String, Error>
     
+    func read(path: String, complete: @escaping (String?) -> Void)
+    
     func download(path: String) -> AnyPublisher<Double, Error>
 }
 
@@ -356,6 +372,17 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
         
         return Future { promise in
             promise(self.result("read"))
+        }
+    }
+    
+    func read(path: String, complete: @escaping (String?) -> Void) {
+        let result: Result<String, Never> = self.result("read:closure")
+        switch result {
+        case .success(let data):
+            complete(data)
+            
+        default:
+            complete(nil)
         }
     }
     
@@ -440,6 +467,11 @@ extension ResourceManager {
         
         return self.fileHandler
             .read(path: path)
+    }
+    
+    func loadFile(path: String, completed: @escaping (String?) -> Void) {
+        return self.fileHandler
+            .read(path: path, complete: completed)
     }
     
     func pass(value: Int, withEscapingClosure closure: @escaping (Int) -> Void) {
