@@ -36,7 +36,6 @@ public class ClosureEventHandler<T> {
     
     deinit {
         self.clearBuffering()
-        print("deinit!👹")
     }
 }
 

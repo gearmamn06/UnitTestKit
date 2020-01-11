@@ -152,7 +152,8 @@ extension Result where Failure == Never {
         switch self {
         case .success(let s):
             assert(s)
-        default: break
+        default:
+            XCTFail("no assert")
         }
     }
 }
