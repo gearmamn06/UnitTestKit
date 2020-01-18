@@ -11,16 +11,16 @@ import XCTest
 
 open class BaseTestCase: XCTestCase {
     
-    public var disposeBag: PublisherDisposeBag!
+    public var cancelBag: CancelBag!
     public var timeout = TestConsts.timeout
     
     override open func setUp() {
         super.setUp()
-        self.disposeBag = PublisherDisposeBag()
+        self.cancelBag = CancelBag()
     }
     
     override open func tearDown() {
-        self.disposeBag = nil
+        self.cancelBag = nil
         super.tearDown()
     }
 }

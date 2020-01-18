@@ -14,11 +14,11 @@ import Combine
 class PublisherDisposeBagTests: XCTestCase {
     
     var subject: PassthroughSubject<Int, Never>!
-    var bag: PublisherDisposeBag!
+    var bag: CancelBag!
     
     override func setUp() {
         super.setUp()
-        bag = PublisherDisposeBag()
+        bag = CancelBag()
         subject = PassthroughSubject()
     }
     
@@ -65,7 +65,7 @@ class PublisherDisposeBagTests: XCTestCase {
         // when
         self.subject
             .sink(receiveValue: { _ in })
-            .disposed(by: &self.bag)
+            .disposed(by: self.bag)
         
         // then
         (self.bag.isEmpty == false).assert()

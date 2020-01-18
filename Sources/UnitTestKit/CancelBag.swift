@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 
-public class PublisherDisposeBag {
+public final class CancelBag {
     
     fileprivate var cancellables: Set<AnyCancellable> = []
     
@@ -34,8 +34,7 @@ public class PublisherDisposeBag {
 
 extension AnyCancellable {
     
-    public func disposed(by disposebag: inout PublisherDisposeBag) {
-        
-        self.store(in: &disposebag.cancellables)
+    public func disposed( by cancelBag: CancelBag) {
+        cancelBag.cancellables.insert(self)
     }
 }
