@@ -81,6 +81,21 @@ extension SpecifiableTestTests {
         wait(for: [expect], timeout: self.timeout)
     }
     
+    func test_waitFinishAndAssert() {
+        
+        let expect = expectation(description: "assert runs")
+        
+        given(wait: self.makePublisher()) {
+        }
+        .when {
+        }
+        .thenFinish {
+            expect.fulfill()
+        }
+        
+        wait(for: [expect], timeout: self.timeout)
+    }
+    
     func test_makeSideEffectAndAssert() {
         
         let expect = expectation(description: "assert runs")
@@ -163,6 +178,22 @@ extension SpecifiableTestTests {
             }
         }
         wait(for: [expect], timeout: self.timeout)
+    }
+    
+    func test_assertFinishFromActionResult() {
+        
+        let expect = expectation(description: "assert runs")
+        
+        given {
+        }
+        .whenWait {
+            self.makePublisher()
+        }
+        .thenFinish {
+            expect.fulfill()
+        }
+        
+        self.wait(for: [expect], timeout: self.timeout)
     }
 }
 

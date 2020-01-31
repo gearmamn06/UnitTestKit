@@ -105,6 +105,15 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
         }
         assert(fail)
     }
+    
+    public func thenFinish(timeout: TimeInterval = TestConsts.timeout,
+                           assert: () -> Void) {
+        
+        self.arrange.waiting
+            .waitFinish(timeout: timeout, trigger: self.action)
+        
+        assert()
+    }
 }
 
 
@@ -142,6 +151,14 @@ extension UnitTestAct where Waiting == Void, Response: Publisher {
                 return
         }
         assert(fail)
+    }
+    
+    public func thenFinish(timeout: TimeInterval = TestConsts.timeout,
+                           assert: () -> Void) {
+        self.action()
+            .waitFinish(timeout: timeout)
+        
+        assert()
     }
 }
 
@@ -218,5 +235,29 @@ extension Publisher {
         waiter.wait(for: [expect], timeout: timeout)
         
         return fail
+    }
+    
+    func waitFinish(timeout: TimeInterval = TestConsts.timeout,
+                    trigger: (() -> Void)? = nil) {
+        
+        let expect = XCTestExpectation()
+        let waiter = XCTWaiter()
+        
+        var subscribing: AnyCancellable?
+        
+        subscribing = self
+            .sink(receiveCompletion: { complete in
+                
+                switch complete {
+                case .finished:
+                    expect.fulfill()
+                case .failure(let error):
+                    XCTFail(error.localizedDescription)
+                }
+                subscribing?.cancel()
+                
+            }, receiveValue: { _ in })
+        trigger?()
+        waiter.wait(for: [expect], timeout: timeout)
     }
 }
