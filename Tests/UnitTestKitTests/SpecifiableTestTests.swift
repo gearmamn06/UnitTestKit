@@ -203,7 +203,7 @@ extension SpecifiableTestTests {
     
     func test_publisher_eventCollecting() {
         
-        let values = self.subject.wait(10) {
+        let waitResult = self.subject.wait(10) {
             (0..<10).forEach { v in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.subject.send(v)
@@ -211,7 +211,13 @@ extension SpecifiableTestTests {
             }
         }
         
-        XCTAssertEqual(values?.sorted(), Array(0..<10))
+        switch waitResult {
+        case .success(let values):
+            XCTAssertEqual(values?.sorted(), Array(0..<10))
+            
+        case .failure(let error):
+            XCTFail(error.localizedDescription)
+        }
     }
     
     
