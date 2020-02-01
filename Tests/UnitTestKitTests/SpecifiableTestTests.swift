@@ -327,7 +327,8 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_loadFile() {
         
         given {
-            self.stubFileHandler.stubbing("read", value: "dummy_data")
+            self.stubFileHandler
+                .stubbing("read", value: Result<String, Error>.success("dummy_data").toFuture)
         }
         .whenWait { () -> Future<String, Error> in
             Swift.print("컴파일러 타입추론 맛탱이가는 포인트")
@@ -407,43 +408,28 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
     
     func read(path: String) -> Future<String, Error> {
         
-        return Future { promise in
-            promise(self.result("read"))
-        }
+        self.stubbedOutput("read") ?? Future{ _ in }
     }
     
     func read(path: String, complete: @escaping (String?) -> Void) {
-        let result: Result<String, Never> = self.result("read:closure")
-        switch result {
-        case .success(let data):
-            complete(data)
-            
-        default:
-            complete(nil)
-        }
+        let result: String? = self.stubbedOutput("read:closure")
+        complete(result)
     }
     
     func download(path: String) -> AnyPublisher<Double, Error> {
         
-        let result: Result<[Double], Error> = self.result("download")
-
-        switch result {
-        case .failure(let error):
-            return Fail(error: error).eraseToAnyPublisher()
-            
-        case .success(let progresses):
+        if let progresses: [Double] = self.stubbedOutput("download") {
             
             self._isDownloading = true
             
-            let justs = progresses.map{ Just($0).eraseToAnyPublisher() }
-            let seedEvent = Empty<Double, Error>().eraseToAnyPublisher()
-            return justs.reduce(into: seedEvent, { acc, just in
-                let delayed = just
-                    .mapError{ _ in NSError(domain: "", code: 0, userInfo: nil) as Error }
-                acc = acc.append(delayed).eraseToAnyPublisher()
-            })
-            .eraseToAnyPublisher()
+            return progresses.publisher
+                .map{ $0 }
+                .mapError{ _ in NSError() as Error }
+                .eraseToAnyPublisher()
         }
+        
+        let error: Error = self.stubbedOutput("download") ?? NSError()
+        return Fail(error: error).eraseToAnyPublisher()
     }
     
     
@@ -519,5 +505,22 @@ extension ResourceManager {
     
     func pass(value: Int, withNonEscapingClosure closure: (Int) -> Void) {
         closure(value)
+    }
+}
+
+
+
+private extension Result {
+    
+    var toFuture: Future<Success, Failure> {
+        return Future { promise in
+            switch self {
+            case .success(let output):
+                promise(.success(output))
+                
+            case .failure(let error):
+                promise(.failure(error))
+            }
+        }
     }
 }

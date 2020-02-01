@@ -147,7 +147,7 @@ extension Stubbale {
     public func stubbing(_ name: String, value: Any) {
         self.register(name: name.stub_prefix, value: value)
     }
-    
+
     public func result<Value, Fail: Error>(_ name: String) -> Result<Value, Fail> {
         
         if let value: Value = self.resolve(name: name.stub_prefix) {
@@ -157,6 +157,40 @@ extension Stubbale {
         let defaultError = NSError(domain: "", code: 0, userInfo: nil)
         let error: Fail = self.resolve(name: name.stub_prefix) ?? defaultError as! Fail
         return Result<Value, Fail>.failure(error)
+    }
+    
+    @available(*, deprecated, message: "will remove")
+    public func stubbedOutput<Value>(_ name: String) -> Value? {
+        
+        return self.resolve(name: name.stub_prefix)
+    }
+    
+    @available(*, deprecated, message: "will remove")
+    public func stubbedFailure<Fail: Error>(_ name: String) -> Fail? {
+        
+        return self.resolve(name: name.stub_prefix)
+    }
+    
+    public func resolveOutput<Value>(_ name: String) -> Value? {
+        return self.resolve(name: name.stub_prefix)
+    }
+    
+    public func resolveOutput<Value>(_ name: String) throws -> Value {
+        guard let value: Value = self.resolve(name: name.stub_prefix) else {
+            throw NSError(domain: "not stubbing", code: 0, userInfo: nil)
+        }
+        return value
+    }
+    
+    public func resolveFailure<Fail: Error>(_ name: String) -> Fail? {
+        return self.resolve(name: name.stub_prefix)
+    }
+    
+    public func resolveFailure<Fail: Error>(_ name: String) throws -> Fail {
+        guard let fail: Fail = self.resolve(name: name.stub_prefix) else {
+            throw NSError(domain: "not stubbing", code: 0, userInfo: nil)
+        }
+        return fail
     }
 }
 
