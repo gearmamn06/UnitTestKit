@@ -32,25 +32,10 @@ class StubTests: XCTestCase {
 
 extension StubTests {
     
-    func testStub_whenStub_returnSynResult() {
-        // given
-        self.stub.stubbing("cancel", value: ())
-        
-        // when
-        let result = self.stub.cancel()
-        
-        // then
-        if case .success = result {
-            XCTAssert(true)
-        } else {
-            XCTFail()
-        }
-    }
-    
     func testStub_whenStub_returnAsyncStubbingResult() {
         // given
         let expect = expectation(description: "resolve stub value as future")
-        self.stub.stubbing("download", value: 100)
+        self.stub.stubbing("download", value: Result<Int, Error>.success(100).toFuture )
         
         // when
         self.stub.download()
@@ -71,7 +56,7 @@ extension StubTests {
         struct DownloadError: Error { }
         
         let expect = expectation(description: "resolve stub error as future")
-        self.stub.stubbing("download", value: DownloadError())
+        self.stub.stubbing("download", value: Result<Int, Error>.failure(DownloadError()).toFuture )
         
         // when
         self.stub.download()
@@ -97,11 +82,7 @@ extension StubTests {
     class StubObject: Stubbale {
         
         func download() -> Future<Int, Error> {
-            return self.result("download").toFuture
-        }
-        
-        func cancel() -> Result<Void, Never> {
-            return self.result("cancel")
+            return self.stubbedOutput("download") ?? Future{ _ in }
         }
     }
 }
