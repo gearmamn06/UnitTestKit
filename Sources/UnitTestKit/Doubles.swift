@@ -140,6 +140,8 @@ extension Spyable {
 
 // MARK: - Stub
 
+public struct NotStubbError: Error {}
+
 public protocol Stubbale: Containable { }
 
 extension Stubbale {
