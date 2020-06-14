@@ -287,7 +287,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_whenDownloadStarted_changeStatus() {
         given {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stubbing("download", value: progresses)
+            self.stubFileHandler.stub("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -300,21 +300,22 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_whenDownloadFail_emitError() {
         
         given(wait: self.sut.downloadingError) {
-            Swift.print("no stubbing -> error")
+            struct DummyError: Error {}
+            self.stubFileHandler.stub("download", value: DummyError())
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
         }
-        .then(take: 1) { errors in
-            (errors.isEmpty == false).assert()
-        }
+        .then(assert: { _ in
+            (true).assert()
+        })
     }
     
     func testResourceManager_whenDownloading_emitPercent() {
         
         given(wait: self.sut.downloadingPercent) {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stubbing("download", value: progresses)
+            self.stubFileHandler.stub("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -328,10 +329,9 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         given {
             self.stubFileHandler
-                .stubbing("read", value: Result<String, Error>.success("dummy_data").toFuture)
+                .stub("read", value: Result<String, Error>.success("dummy_data").toFuture)
         }
         .whenWait { () -> Future<String, Error> in
-            Swift.print("컴파일러 타입추론 맛탱이가는 포인트")
             return self.sut.loadFile(path: "dummy_path")
         }
         .then { value in
@@ -343,7 +343,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         let handler = ClosureEventHandler<String?>()
         given(wait: handler.eraseToAnyPublisher()) {
-            self.stubFileHandler.stubbing("read:closure", value: "dummy_data")
+            self.stubFileHandler.stub("read:closure", value: "dummy_data")
         }
         .when {
             self.sut.loadFile(path: "dummy_path", completed: handler.receiver.send)
@@ -408,17 +408,17 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
     
     func read(path: String) -> Future<String, Error> {
         
-        self.stubbedOutput("read") ?? Future{ _ in }
+        self.answer("read") ?? Future{ _ in }
     }
     
     func read(path: String, complete: @escaping (String?) -> Void) {
-        let result: String? = self.stubbedOutput("read:closure")
+        let result: String? = self.answer("read:closure")
         complete(result)
     }
     
     func download(path: String) -> AnyPublisher<Double, Error> {
         
-        if let progresses: [Double] = self.stubbedOutput("download") {
+        if let progresses: [Double] = self.answer("download") {
             
             self._isDownloading = true
             
@@ -426,14 +426,12 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
                 .map{ $0 }
                 .mapError{ _ in NSError() as Error }
                 .eraseToAnyPublisher()
+        } else if let error: Error = self.answer("download") {
+            return Fail(error: error).eraseToAnyPublisher()
+        } else {
+            return Empty().eraseToAnyPublisher()
         }
-        
-        let error: Error = self.stubbedOutput("download") ?? NSError()
-        return Fail(error: error).eraseToAnyPublisher()
     }
-    
-    
-    
 }
 
 

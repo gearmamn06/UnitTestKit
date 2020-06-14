@@ -70,8 +70,8 @@ extension ContainableTests {
         registerData()
         
         // when
-        let intValue: Int? = container.resolve(name: "k1")
-        let stringValue: String? = container.resolve(name: "k2")
+        let intValue: Int? = container.resolve(name: "k1") { $0 as? Int }
+        let stringValue: String? = container.resolve(name: "k2") { $0 as? String }
         
         // then
         XCTAssert(intValue == 1)
@@ -103,7 +103,7 @@ extension ContainableTests {
         registerData()
         
         // when
-        let intValue: Int? = container.resolve(name: "wrong_key")
+        let intValue: Int? = container.resolve(name: "wrong_key") { $0 as? Int }
         
         // then
         XCTAssert(intValue == nil)
