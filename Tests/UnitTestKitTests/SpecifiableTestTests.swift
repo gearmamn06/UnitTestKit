@@ -439,7 +439,7 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
 
 fileprivate class ResourceManager {
     
-    private var disposebag = CancelBag()
+    private var cancellables = Set<AnyCancellable>()
     private let fileHandler: FileHandler
     
     private let _percent = PassthroughSubject<Double, Never>()
@@ -483,7 +483,7 @@ extension ResourceManager {
             }, receiveValue: { [weak self] percent in
                 self?._percent.send(percent)
             })
-            .disposed(by: self.disposebag)
+            .store(in: &self.cancellables)
     }
     
     func loadFile(path: String) -> Future<String, Error> {
