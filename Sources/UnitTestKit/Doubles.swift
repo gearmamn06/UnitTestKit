@@ -16,12 +16,12 @@ private extension String {
         return "spy_\(self)"
     }
     
-    var spy_wait_prefix: String {
-        return "spy_wait_\(self)"
-    }
-
     var stub_prefix: String {
         return "stub_\(self)"
+    }
+    
+    var mock_prefix: String {
+        return "mock_\(self)"
     }
 }
 
@@ -81,40 +81,63 @@ extension Containable {
 }
 
 
+// MARK: - Stub
+
+public protocol Stubbale: Containable { }
+
+extension Stubbale {
+    
+    public func stub(_ name: String) {
+        self.register(name: name.stub_prefix, value: ())
+    }
+    
+    public func stub<V>(_ name: String, value: V) {
+        self.register(name: name.stub_prefix, value: value)
+    }
+
+    public func answer<V>(_ name: String) -> V? {
+        return self.resolve(name: name.stub_prefix) { $0 as? V }
+    }
+    
+    public func answer<V>(_ name: String, mapping: ((Any) -> V?)) -> V? {
+        return self.resolve(name: name.stub_prefix, mapping: mapping)
+    }
+}
+
+
 // MARK: - Spyable protocol
 
 public protocol Spyable: Containable { }
 
 extension Spyable {
-
+    
     public func spy(_ name: String) {
         self.spy(name, args: ())
     }
     
-    public func spy(_ name: String, args: Any) {
+    public func spy<A>(_ name: String, args: A) {
         self.register(name: name.spy_prefix, value: args)
         self.increaseCallCount(name)
-        let waitCalling: ((Any) -> Void)? = self.resolve(name: name.spy_wait_prefix,
-                                                         mapping: { $0 as? (Any) -> Void })
-        waitCalling?(args)
-    }
-
-    public func isCalled(_ name: String) -> Bool {
-        let callCount = self.calledTimes(name)
-        return callCount > 0
     }
     
-    public func called<T>(_ name: String, mapping: (Any) -> T?) -> T? {
-        return self.resolve(name: name.spy_prefix, mapping: mapping)
+    public func called(_ name: String) -> Bool {
+        let args = self.resolve(name: name.spy_prefix, mapping: { $0 })
+        return args != nil
     }
     
-    public func calledTimes(_ name: String) -> Int {
+    public func called<A: Equatable>(_ name: String, withArgs: A) -> Bool {
+        let args = self.resolve(name: name.spy_prefix, mapping: { $0 as? A })
+        return args == withArgs
+    }
+    
+    public func called(_ name: String, withArgs: (Any?) -> Bool) -> Bool {
+        let args = self.resolve(name: name.spy_prefix, mapping: { $0 })
+        return withArgs(args)
+    }
+    
+    public func called(_ name: String, times: Int) -> Bool {
         let countMap = self.resolve(name: count_key) { $0 as? [String: Int] } ?? [:]
-        return countMap[name] ?? 0
-    }
-    
-    public func waitCalled(_ name: String, calledWithArgs: @escaping (Any) -> Void) {
-        self.register(name: name.spy_wait_prefix, value: calledWithArgs)
+        return countMap[name] == times
     }
 }
 
@@ -133,21 +156,39 @@ extension Spyable {
 }
 
 
-// MARK: - Stub
+// MARK: - Mockable
 
-public protocol Stubbale: Containable { }
+public protocol Mockable: Containable { }
 
-extension Stubbale {
-    
-    public func stub(_ name: String, value: Any) {
-        self.register(name: name.stub_prefix, value: value)
+extension Mockable {
+
+    public func expect<V>(_ name: String,
+                          verifying: @escaping (V) -> Void) {
+        self.register(name: name.mock_prefix, value: verifying)
     }
     
-    public func answer<T>(_ name: String) -> T? {
-        return self.resolve(name: name.stub_prefix) { $0 as? T }
+    public func verify<V>(name: String, args: V) {
+        let verifying = self.resolve(name: name.mock_prefix) { $0 as? (V) -> Void }
+        verifying?(args)
     }
-    
-    public func answer<T>(_ name: String, mapping: ((Any) -> T?)) -> T? {
-        return self.resolve(name: name.stub_prefix, mapping: mapping)
+}
+
+
+// MARK: - Stuntable as Test Double
+
+public protocol Stuntable: Stubbale, Mockable, Spyable { }
+
+extension Stuntable {
+
+    public var asSpy: Spyable {
+        return self
+    }
+
+    public var asStub: Stubbale {
+        return self
+    }
+
+    public var asMock: Mockable {
+        return self
     }
 }

@@ -33,8 +33,8 @@ extension SpyTests {
         spy.method1()
 
         // then
-        XCTAssert(spy.isCalled("method1") == true)
-        XCTAssert(spy.isCalled("method2") == false)
+        XCTAssert(spy.called("method1") == true)
+        XCTAssert(spy.called("method2") == false)
     }
     
     func testSpy_methodCalledWithArgs() {
@@ -42,7 +42,7 @@ extension SpyTests {
         spy.method2(int: 100)
         
         // then
-        XCTAssert(spy.called("method2", mapping: { $0 as? Int}) == 100)
+        XCTAssert(spy.called("method2", withArgs: 100))
     }
     
     func testSpy_checkCallCount() {
@@ -53,24 +53,7 @@ extension SpyTests {
         }
         
         // then
-        XCTAssert(spy.calledTimes("method1") == 10)
-        XCTAssert(spy.calledTimes("method2") == 0)
-    }
-    
-    func testSpy_waitCalled() {
-        // Arrange
-        let expect = expectation(description: "wait for call")
-        
-        self.spy.waitCalled("method2") { args in
-            if let int = args as? Int, int == 1 {
-                expect.fulfill()
-            }
-        }
-        // Act
-        self.spy.method2(int: 1)
-        
-        // Assert
-        self.waitForExpectations(timeout: 0.001)
+        XCTAssert(spy.called("method1", times: 10))
     }
 }
 
