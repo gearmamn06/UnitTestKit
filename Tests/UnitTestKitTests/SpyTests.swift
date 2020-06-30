@@ -28,33 +28,21 @@ class SpyTests: XCTestCase {
 
 extension SpyTests {
     
-    func testSpy_verityMethodCalled() {
+    func testSpy_selectedMethodCalled() {
         // when
         spy.method1()
 
         // then
-        XCTAssert(spy.called("method1"))
+        XCTAssert(spy.called("method1") == true)
         XCTAssert(spy.called("method2") == false)
     }
     
-    func testSpy_verifyMethodCalledWithArgs() {
+    func testSpy_methodCalledWithArgs() {
         // when
         spy.method2(int: 100)
         
         // then
-        XCTAssert(spy.called("method2"))
         XCTAssert(spy.called("method2", withArgs: 100))
-    }
-    
-    func testSpy_verifyMethodCalledWithCustomVerifyingRule() {
-        // when
-        spy.method3(100, arg2: "dummy_string")
-        
-        // then
-        let called = spy.called("method3") { (dic: [String: Any]) in
-            return (dic["arg1"] as? Int) == 100
-        }
-        XCTAssert(called)
     }
     
     func testSpy_checkCallCount() {
@@ -66,7 +54,6 @@ extension SpyTests {
         
         // then
         XCTAssert(spy.called("method1", times: 10))
-        XCTAssert(spy.called("method2", times: 0))
     }
 }
 
@@ -76,15 +63,15 @@ extension SpyTests {
     class SpyObject: Spyable {
         
         func method1() {
-            self.spy("method1")
+            self.record("method1")
         }
         
         func method2(int: Int) {
-            self.spy("method2", args: int)
+            self.record("method2", args: int)
         }
         
         func method3(_ arg1: Int, arg2: String) {
-            self.spy("method3", args: [
+            self.record("method3", args: [
                 "arg1": arg1,
                 "arg2": arg2
             ])
