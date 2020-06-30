@@ -72,6 +72,8 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
     
     public func then(take: Int,
                      timeout: TimeInterval = TestConsts.timeout,
+                     file: StaticString = #file,
+                     line: UInt = #line,
                      assert: ([Waiting.Output]) -> Void) {
         
         let waitRsult = self.arrange.waiting
@@ -80,56 +82,54 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
         switch waitRsult {
         case .success(let _outputs):
             guard let outputs = _outputs else {
-                XCTFail("no event occurred")
+                XCTFail("no event occurred", file: file, line: line)
                 return
             }
             assert(outputs)
         
         case .failure(let error):
-            XCTFail(error.localizedDescription)
+            XCTFail(error.localizedDescription, file: file, line: line)
         }
     }
     
     public func then(timeout: TimeInterval = TestConsts.timeout,
+                     file: StaticString = #file,
+                     line: UInt = #line,
                      assert: (Waiting.Output) -> Void) {
         
-        let waitResult = self.arrange.waiting
-            .wait(1, timeout: timeout, triger: self.action)
-        
-        switch waitResult {
-        case .success(let _outputs):
-            guard let output = _outputs?.first else {
-                XCTFail("no event occurred")
+        self.then(take: 1, timeout: timeout, file: file, line: line) { outputs in
+            guard let output = outputs.first else {
+                XCTFail("no event occurred", file: file, line: line)
                 return
             }
             assert(output)
-        
-        case .failure(let error):
-            XCTFail(error.localizedDescription)
         }
     }
     
-    public func thenFail(take: Int = 1,
-                         timeout: TimeInterval = TestConsts.timeout,
+    public func thenFail(timeout: TimeInterval = TestConsts.timeout,
+                         file: StaticString = #file,
+                         line: UInt = #line,
                          assert: (Waiting.Failure) -> Void) {
         
         let waitResult = self.arrange.waiting
-            .waitFailure(take, timeout: timeout, trigger: self.action)
+            .waitFailure(timeout: timeout, trigger: self.action)
         
         switch waitResult {
         case .success(let _error):
             guard let error = _error else {
-                XCTFail("no failure event occurred")
+                XCTFail("no failure event occurred", file: file, line: line)
                 return
             }
             assert(error)
             
         case .failure(let error):
-            XCTFail(error.localizedDescription)
+            XCTFail(error.localizedDescription, file: file, line: line)
         }
     }
     
     public func thenFinish(timeout: TimeInterval = TestConsts.timeout,
+                           file: StaticString = #file,
+                           line: UInt = #line,
                            assert: () -> Void) {
         
         let waitResult = self.arrange.waiting
@@ -140,7 +140,7 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
             assert()
             
         case .failure(let error):
-            XCTFail(error.localizedDescription)
+            XCTFail(error.localizedDescription, file: file, line: line)
         }
     }
 }
@@ -149,26 +149,23 @@ extension UnitTestAct where Waiting: Publisher, Response == Void {
 extension UnitTestAct where Waiting == Void, Response: Publisher {
     
     public func then(timeout: TimeInterval = TestConsts.timeout,
+                     file: StaticString = #file,
+                     line: UInt = #line,
                      assert: (Response.Output) -> Void) {
         
-        let waitRsult = self.action()
-            .wait(1, timeout: timeout)
-        
-        switch waitRsult {
-        case .success(let _outputs):
-            guard let output = _outputs?.first else {
-                XCTFail("no event occurred")
+        self.then(take: 1, timeout: timeout, file: file, line: line) { outputs in
+            guard let output = outputs.first else {
+                XCTFail("no event occurred", file: file, line: line)
                 return
             }
             assert(output)
-        
-        case .failure(let error):
-            XCTFail(error.localizedDescription)
         }
     }
     
     public func then(take: Int,
                      timeout: TimeInterval = TestConsts.timeout,
+                     file: StaticString = #file,
+                     line: UInt = #line,
                      assert: ([Response.Output]) -> Void) {
         
         let waitRsult = self.action()
@@ -177,26 +174,28 @@ extension UnitTestAct where Waiting == Void, Response: Publisher {
         switch waitRsult {
         case .success(let _outputs):
             guard let outputs = _outputs else {
-                XCTFail("no event occurred")
+                XCTFail("no event occurred", file: file, line: line)
                 return
             }
             assert(outputs)
         
         case .failure(let error):
-            XCTFail(error.localizedDescription)
+            XCTFail(error.localizedDescription, file: file, line: line)
         }
     }
     
     public func thenFail(take: Int = 1,
                          timeout: TimeInterval = TestConsts.timeout,
+                         file: StaticString = #file,
+                         line: UInt = #line,
                          assert: (Response.Failure) -> Void) {
         let waitResult = self.action()
-            .waitFailure(take, timeout: timeout)
+            .waitFailure(timeout: timeout)
         
         switch waitResult {
         case .success(let _error):
             guard let error = _error else {
-                XCTFail("no failure event occurred")
+                XCTFail("no failure event occurred", file: file, line: line)
                 return
             }
             assert(error)
@@ -207,6 +206,8 @@ extension UnitTestAct where Waiting == Void, Response: Publisher {
     }
     
     public func thenFinish(timeout: TimeInterval = TestConsts.timeout,
+                           file: StaticString = #file,
+                           line: UInt = #line,
                            assert: () -> Void) {
         let waitResult = self.action()
             .waitFinish(timeout: timeout)
@@ -216,7 +217,7 @@ extension UnitTestAct where Waiting == Void, Response: Publisher {
             assert()
             
         case .failure(let error):
-            XCTFail(error.localizedDescription)
+            XCTFail(error.localizedDescription, file: file, line: line)
         }
     }
 }
@@ -224,12 +225,12 @@ extension UnitTestAct where Waiting == Void, Response: Publisher {
 
 extension Result where Failure == Never {
     
-    public func then(_ assert: (Success) -> Void) {
+    public func then(file: StaticString = #file, line: UInt = #line, assert: (Success) -> Void) {
         switch self {
         case .success(let s):
             assert(s)
         default:
-            XCTFail("no assert")
+            XCTFail("no assert", file: file, line: line)
         }
     }
 }
@@ -237,6 +238,7 @@ extension Result where Failure == Never {
 
 enum PubliserWaitError: Error {
     case expectNotFulFill(_ detail: String)
+    case unexpectedErrorOccurs(error: Error)
 }
 
 
@@ -247,27 +249,22 @@ extension Publisher {
               triger: (() -> Void)? = nil) -> Result<[Output]?, Error> {
         
         let expect = XCTestExpectation()
+        expect.expectedFulfillmentCount = takeCount
+        
+        var actualCount = 0
         
         var outputs: [Output]?
-        var subscribing: AnyCancellable?
-        
-        subscribing = self
-            .collect(takeCount)
-            .first()
-            .sink(receiveCompletion: { complete in
-                switch complete {
-                case .finished:
-                    expect.fulfill()
-                default: break
-                }
-                subscribing?.cancel()
-            }, receiveValue: {
-                outputs = $0
-            })
-        
+        let valueReceived: (Output) -> Void = { output in
+            outputs = (outputs ?? []) + [output]
+            actualCount += 1
+            expect.fulfill()
+        }
+        let subscribing: AnyCancellable! = self
+            .sink(receiveCompletion: { _ in }, receiveValue: valueReceived)
         triger?()
         
         let result = XCTWaiter.wait(for: [expect], timeout: timeout)
+        subscribing?.cancel()
         if case .timedOut = result {
             let detail = "publisher not emit \(takeCount) outputs"
             return .failure(PubliserWaitError.expectNotFulFill(detail))
@@ -276,33 +273,26 @@ extension Publisher {
         return .success(outputs)
     }
     
-    func waitFailure(_ takeCount: Int,
-                     timeout: TimeInterval = TestConsts.timeout,
+    func waitFailure(timeout: TimeInterval = TestConsts.timeout,
                      trigger: (() -> Void)? = nil) -> Result<Failure?, Error> {
         
         let expect = XCTestExpectation()
         
         var fail: Failure?
-        var subscribing: AnyCancellable?
         
-        subscribing = self
-            .collect(takeCount)
-            .first()
-            .sink(receiveCompletion: { complete in
-                
-                switch complete {
-                case .failure(let error):
-                    fail = error
-                    expect.fulfill()
-                default: break
-                }
-                subscribing?.cancel()
-                
-            }, receiveValue: { _ in })
+        let streamEnd: (Subscribers.Completion<Failure>) -> Void = { complete in
+            if case let .failure(error) = complete {
+                fail = error
+            }
+            expect.fulfill()
+        }
+        
+        let subscribing: AnyCancellable! = self
+            .sink(receiveCompletion: streamEnd, receiveValue: { _ in })
         trigger?()
         
         let result = XCTWaiter.wait(for: [expect], timeout: timeout)
-        
+        subscribing?.cancel()
         if case .timedOut = result {
             return .failure(PubliserWaitError.expectNotFulFill(""))
         }
@@ -314,27 +304,27 @@ extension Publisher {
                     trigger: (() -> Void)? = nil) -> Result<Void, Error> {
         
         let expect = XCTestExpectation()
+        var fail: Failure?
         
-        var subscribing: AnyCancellable?
+        let streamEnd: (Subscribers.Completion<Failure>) -> Void = { complete in
+            if case let .failure(error) = complete {
+                fail = error
+            }
+            expect.fulfill()
+        }
         
-        subscribing = self
-            .sink(receiveCompletion: { complete in
-                
-                switch complete {
-                case .finished:
-                    expect.fulfill()
-                case .failure(let error):
-                    XCTFail(error.localizedDescription)
-                }
-                subscribing?.cancel()
-                
-            }, receiveValue: { _ in })
+        let subscribing: AnyCancellable! = self
+            .sink(receiveCompletion: streamEnd, receiveValue: { _ in })
         trigger?()
         
         let result = XCTWaiter.wait(for: [expect], timeout: timeout)
-        
+        subscribing?.cancel()
         if case .timedOut = result {
             return .failure(PubliserWaitError.expectNotFulFill(""))
+        }
+        
+        if let error = fail {
+            return .failure(PubliserWaitError.unexpectedErrorOccurs(error: error))
         }
         
         return .success(())

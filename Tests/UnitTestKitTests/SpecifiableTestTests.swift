@@ -73,7 +73,7 @@ extension SpecifiableTestTests {
         given(wait: self.makeFailure(delay: 0.1)){}
         .when {
         }
-        .thenFail(take: 10) {
+        .thenFail {
             if $0 is DummyError {
                 expect.fulfill()
             }
