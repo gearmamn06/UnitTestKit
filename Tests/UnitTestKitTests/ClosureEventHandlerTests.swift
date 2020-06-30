@@ -53,7 +53,7 @@ extension ClosureEventHandlerTests {
                 values.append(value)
                 expect.fulfill()
             })
-            .disposed(by: self.cancelBag)
+            .store(in: &self.cancellables)
         
         // then
         self.waitForExpectations(timeout: self.timeout) { _ in
@@ -77,7 +77,7 @@ extension ClosureEventHandlerTests {
                 values.append(value)
                 expect.fulfill()
             })
-            .disposed(by: self.cancelBag)
+            .store(in: &self.cancellables)
         
         // then
         self.waitForExpectations(timeout: self.timeout) { _ in
@@ -91,7 +91,7 @@ extension ClosureEventHandlerTests {
         // when
         handler.eraseToAnyPublisher()
             .sink(receiveValue: { _ in })
-            .disposed(by: self.cancelBag)
+            .store(in: &self.cancellables)
         
         // then
         (handler.buffering == nil).assert()
@@ -113,7 +113,7 @@ extension ClosureEventHandlerTests {
                 values.append(value)
                 expect.fulfill()
             })
-            .disposed(by: self.cancelBag)
+            .store(in: &self.cancellables)
         
         (10..<20).forEach {
             self.handler.receiver.send($0)
