@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 
 private var baseContainerKey: String = "base_container"
@@ -94,6 +95,18 @@ extension Stubbale {
     public func stub<V>(_ name: String, value: V) {
         self.register(name: name.stub_prefix, value: value)
     }
+    
+    public func stubResult<S, E>(_ name: String, result: Result<S, E>) {
+        self.register(name: name.stub_prefix, value: result)
+    }
+    
+    public func stubFuture<O, E>(_ name: String, future: Future<O, E>) {
+        self.register(name: name.stub_prefix, value: future)
+    }
+    
+    public func stubPublisher<P: Publisher>(_ name: String, publisher: P) {
+        self.register(name: name.stub_prefix, value: publisher)
+    }
 
     public func answer<V>(_ name: String) -> V? {
         return self.resolve(name: name.stub_prefix) { $0 as? V }
@@ -101,6 +114,18 @@ extension Stubbale {
     
     public func answer<V>(_ name: String, mapping: ((Any) -> V?)) -> V? {
         return self.resolve(name: name.stub_prefix, mapping: mapping)
+    }
+    
+    public func answer<S, E: Error>(_ name: String, fallback: Result<S, E>) -> Result<S, E> {
+        return self.resolve(name: name.stub_prefix, mapping: { $0 as? Result<S, E>}) ?? fallback
+    }
+    
+    public func answer<O, E: Error>(_ name: String, fallback: Future<O, E>) -> Future<O, E> {
+        return self.resolve(name: name.stub_prefix, mapping: { $0 as? Future<O, E> }) ?? fallback
+    }
+    
+    public func answer<P: Publisher>(_ name: String, fallback: P) -> P {
+        return self.resolve(name: name.stub_prefix, mapping: { $0 as? P }) ?? fallback
     }
 }
 

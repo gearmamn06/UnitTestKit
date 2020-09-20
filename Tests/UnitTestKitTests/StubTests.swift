@@ -88,6 +88,46 @@ extension StubTests {
         // then
         self.waitForExpectations(timeout: 0.001)
     }
+    
+    private var dummyError: Error {
+        struct DummyError: Error { }
+        return DummyError()
+    }
+    
+    func testStub_stubResultAndGetAnswer() {
+        // given
+        let result: Result<Int, Error> = .success(2)
+        self.stub.stubResult("result", result: result)
+        
+        // when
+        let answer: Result<Int, Error> = self.stub.answer("result", fallback: .failure(self.dummyError))
+        
+        // then
+        if case let .success(value) = answer, value == 2 {
+            XCTAssert(true)
+        } else {
+            XCTFail()
+        }
+    }
+    
+    func testStub_stubFutureAndGetAnswer() {
+        // given
+        let expect = expectation(description: "get answer stubbed value as future")
+        let future: Future<Int, Error> = .init{ $0(.success(2)) }
+        self.stub.stubFuture("future", future: future)
+        
+        // when
+        let answer: Future<Int, Error> = self.stub.answer("future", fallback: .init{ $0(.failure(self.dummyError)) })
+        
+        // then
+        _ = answer
+            .sink(receiveCompletion: { _ in },
+                  receiveValue: { value in
+                    expect.fulfill()
+                    XCTAssertEqual(value, 2)
+                  })
+        self.waitForExpectations(timeout: 1)
+    }
 }
 
 
