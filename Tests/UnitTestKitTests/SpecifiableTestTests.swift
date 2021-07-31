@@ -269,16 +269,16 @@ extension SpecifiableTestTests {
 class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
 
     private var sut: ResourceManager!
-    private var stubFileHandler: StubFileManager!
+    private var mockFileHandler: MockFileManager!
     
     override func setUp() {
         super.setUp()
-        self.stubFileHandler = StubFileManager()
-        self.sut = ResourceManager(fileHandler: self.stubFileHandler)
+        self.mockFileHandler = MockFileManager()
+        self.sut = ResourceManager(fileHandler: self.mockFileHandler)
     }
     
     override func tearDown() {
-        self.stubFileHandler = nil
+        self.mockFileHandler = nil
         self.sut = nil
         super.tearDown()
     }
@@ -287,7 +287,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_whenDownloadStarted_changeStatus() {
         given {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stub("download", value: progresses)
+            self.mockFileHandler.register("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -301,7 +301,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         given(wait: self.sut.downloadingError) {
             struct DummyError: Error {}
-            self.stubFileHandler.stub("download", value: DummyError())
+            self.mockFileHandler.register("download", value: DummyError())
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -315,7 +315,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         given(wait: self.sut.downloadingPercent) {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stub("download", value: progresses)
+            self.mockFileHandler.register("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -328,8 +328,8 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_loadFile() {
         
         given {
-            self.stubFileHandler
-                .stub("read", value: Result<String, Error>.success("dummy_data").toFuture)
+            self.mockFileHandler
+                .register("read", value: Result<String, Error>.success("dummy_data").toFuture)
         }
         .whenWait { () -> Future<String, Error> in
             return self.sut.loadFile(path: "dummy_path")
@@ -343,7 +343,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         let handler = ClosureEventHandler<String?>()
         given(wait: handler.eraseToAnyPublisher()) {
-            self.stubFileHandler.stub("read:closure", value: "dummy_data")
+            self.mockFileHandler.register("read:closure", value: "dummy_data")
         }
         .when {
             self.sut.loadFile(path: "dummy_path", completed: handler.receiver.send)
@@ -386,7 +386,7 @@ extension TestSpecifiableTests_usage {
     }
 }
 
-// MARK: - Doubles
+// MARK: - Mocking
 
 fileprivate protocol FileHandler {
     
@@ -399,7 +399,7 @@ fileprivate protocol FileHandler {
     func download(path: String) -> AnyPublisher<Double, Error>
 }
 
-fileprivate class StubFileManager: FileHandler, Stubbale {
+fileprivate class MockFileManager: FileHandler, Mocking {
     
     private var _isDownloading = false
     var isDownloading: Bool {
@@ -408,17 +408,17 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
     
     func read(path: String) -> Future<String, Error> {
         
-        self.answer("read") ?? Future{ _ in }
+        self.resolve("read") ?? Future{ _ in }
     }
     
     func read(path: String, complete: @escaping (String?) -> Void) {
-        let result: String? = self.answer("read:closure")
+        let result: String? = self.resolve("read:closure")
         complete(result)
     }
     
     func download(path: String) -> AnyPublisher<Double, Error> {
         
-        if let progresses: [Double] = self.answer("download") {
+        if let progresses: [Double] = self.resolve("download") {
             
             self._isDownloading = true
             
@@ -426,7 +426,7 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
                 .map{ $0 }
                 .mapError{ _ in NSError() as Error }
                 .eraseToAnyPublisher()
-        } else if let error: Error = self.answer("download") {
+        } else if let error: Error = self.resolve("download") {
             return Fail(error: error).eraseToAnyPublisher()
         } else {
             return Empty().eraseToAnyPublisher()

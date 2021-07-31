@@ -14,16 +14,16 @@ import Combine
 class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
 
     private var sut: ResourceManager!
-    private var stubFileHandler: StubFileManager!
+    private var mockFileHandler: MockFileManager!
     
     override func setUp() {
         super.setUp()
-        self.stubFileHandler = StubFileManager()
-        self.sut = ResourceManager(fileHandler: self.stubFileHandler)
+        self.mockFileHandler = MockFileManager()
+        self.sut = ResourceManager(fileHandler: self.mockFileHandler)
     }
     
     override func tearDown() {
-        self.stubFileHandler = nil
+        self.mockFileHandler = nil
         self.sut = nil
         super.tearDown()
     }
@@ -32,7 +32,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_whenDownloadStarted_changeStatus() {
         given {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stubbing("download", value: progresses)
+            self.mockFileHandler.register("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -45,21 +45,22 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_whenDownloadFail_emitError() {
         
         given(wait: self.sut.downloadingError) {
-            Swift.print("no stubbing -> error")
+            struct DummyError: Error {}
+            self.mockFileHandler.register("download", value: DummyError())
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
         }
-        .then(take: 1) { errors in
-            (errors.isEmpty == false).assert()
-        }
+        .then(assert: { _ in
+            (true).assert()
+        })
     }
     
     func testResourceManager_whenDownloading_emitPercent() {
         
         given(wait: self.sut.downloadingPercent) {
             let progresses: [Double] = [0, 0.1, 0.2]
-            self.stubFileHandler.stubbing("download", value: progresses)
+            self.mockFileHandler.register("download", value: progresses)
         }
         .when {
             self.sut.startDownloading(path: "dummy_path")
@@ -72,7 +73,8 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     func testResourceManager_loadFile() {
         
         given {
-            self.stubFileHandler.stubbing("read", value: "dummy_data")
+            self.mockFileHandler
+                .register("read", value: Result<String, Error>.success("dummy_data").toFuture)
         }
         .whenWait { () -> Future<String, Error> in
             return self.sut.loadFile(path: "dummy_path")
@@ -86,7 +88,7 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
         
         let handler = ClosureEventHandler<String?>()
         given(wait: handler.eraseToAnyPublisher()) {
-            self.stubFileHandler.stubbing("read:closure", value: "dummy_data")
+            self.mockFileHandler.register("read:closure", value: "dummy_data")
         }
         .when {
             self.sut.loadFile(path: "dummy_path", completed: handler.receiver.send)
@@ -97,9 +99,40 @@ class TestSpecifiableTests_usage: BaseTestCase, SpecifiableTest {
     }
 }
 
+// MARK: Test Handler to publisher
+
+extension TestSpecifiableTests_usage {
+    
+    func testHandler_valuePassingUsingEscapingClosure() {
+
+        given {
+        }
+        .whenWait { () -> AnyPublisher<Int, Never> in
+            let handler = ClosureEventHandler<Int>()
+            self.sut.pass(value: 100, withEscapingClosure: handler.receiver.send)
+            return handler.eraseToAnyPublisher()
+        }
+        .then(assert: { value in
+            (value == 100).assert()
+        })
+    }
+
+    func testHandler_valuesPassingUsingNonEscapingClosure() {
+        given {
+        }
+        .whenWait { () -> AnyPublisher<Int, Never> in
+            let handler = ClosureEventHandler<Int>()
+            self.sut.pass(value: 100, withNonEscapingClosure: handler.receiver.send)
+            return handler.eraseToAnyPublisher()
+        }
+        .then(assert: { value in
+            (value == 100).assert()
+        })
+    }
+}
 
 
-// MARK: - Doubles
+// MARK: - Mocking
 
 fileprivate protocol FileHandler {
     
@@ -112,7 +145,7 @@ fileprivate protocol FileHandler {
     func download(path: String) -> AnyPublisher<Double, Error>
 }
 
-fileprivate class StubFileManager: FileHandler, Stubbale {
+fileprivate class MockFileManager: FileHandler, Mocking {
     
     private var _isDownloading = false
     var isDownloading: Bool {
@@ -121,43 +154,30 @@ fileprivate class StubFileManager: FileHandler, Stubbale {
     
     func read(path: String) -> Future<String, Error> {
         
-        return Future { promise in
-            promise(self.result("read"))
-        }
+        self.resolve("read") ?? Future{ _ in }
     }
     
     func read(path: String, complete: @escaping (String?) -> Void) {
-        let result: Result<String, Never> = self.result("read:closure")
-        switch result {
-        case .success(let data):
-            complete(data)
-            
-        default:
-            complete(nil)
-        }
+        let result: String? = self.resolve("read:closure")
+        complete(result)
     }
     
     func download(path: String) -> AnyPublisher<Double, Error> {
         
-        let result: Result<[Double], Error> = self.result("download")
-
-        switch result {
-        case .failure(let error):
-            return Fail(error: error).eraseToAnyPublisher()
-            
-        case .success(let progresses):
+        if let progresses: [Double] = self.resolve("download") {
             
             self._isDownloading = true
             
             return progresses.publisher
                 .map{ $0 }
-                .mapError { _ in NSError(domain: "", code: 0, userInfo: nil) as Error }
+                .mapError{ _ in NSError() as Error }
                 .eraseToAnyPublisher()
+        } else if let error: Error = self.resolve("download") {
+            return Fail(error: error).eraseToAnyPublisher()
+        } else {
+            return Empty().eraseToAnyPublisher()
         }
     }
-    
-    
-    
 }
 
 

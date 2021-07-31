@@ -44,34 +44,23 @@ extension SpyTests {
         // then
         XCTAssert(spy.called("method2", withArgs: 100))
     }
-    
-    func testSpy_checkCallCount() {
-        // given
-        // when
-        (0..<10).forEach { _ in
-            self.spy.method1()
-        }
-        
-        // then
-        XCTAssert(spy.called("method1", times: 10))
-    }
 }
 
 
 extension SpyTests {
     
-    class SpyObject: Spyable {
+    class SpyObject: Mocking {
         
         func method1() {
-            self.record("method1")
+            self.verify("method1")
         }
         
         func method2(int: Int) {
-            self.record("method2", args: int)
+            self.verify("method2", args: int)
         }
         
         func method3(_ arg1: Int, arg2: String) {
-            self.record("method3", args: [
+            self.verify("method3", args: [
                 "arg1": arg1,
                 "arg2": arg2
             ])

@@ -11,34 +11,34 @@ import Combine
 @testable import UnitTestKit
 
 
-class StubTests: XCTestCase {
+class MockingTests: XCTestCase {
     
     private var disposeBag: Set<AnyCancellable>!
-    private var stub: StubObject!
+    private var mock: MockObject!
     
     override func setUp() {
         self.disposeBag = []
-        self.stub = StubObject()
+        self.mock = MockObject()
         super.setUp()
     }
     
     override func tearDown() {
         self.disposeBag = nil
-        self.stub = nil
+        self.mock = nil
         super.tearDown()
     }
 }
 
 
-extension StubTests {
+extension MockingTests {
     
     func testStub_whenStub_returnAsyncStubbingResult() {
         // given
         let expect = expectation(description: "resolve stub value as future")
-        self.stub.stub("download", value: Result<Int, Error>.success(100).asFuture().eraseToAnyPublisher())
+        self.mock.register("download", value: Result<Int, Error>.success(100).asFuture().eraseToAnyPublisher())
         
         // when
-        self.stub.download()
+        self.mock.download()
             .sink(receiveCompletion: { _ in },
                   receiveValue: { value in
                     if value == 100 {
@@ -54,10 +54,10 @@ extension StubTests {
     func testStub_whenStubbed_returnAnswer() {
         // given
         let expect = expectation(description: "resolve and return answer")
-        self.stub.stub("download", value: Result<Int, Error>.success(100).asFuture().eraseToAnyPublisher())
+        self.mock.register("download", value: Result<Int, Error>.success(100).asFuture().eraseToAnyPublisher())
         
         // when
-        stub.download()
+        mock.download()
             .sink(receiveCompletion: { _ in },
                   receiveValue: { value in
                     if value == 100 {
@@ -76,7 +76,7 @@ extension StubTests {
         expect.isInverted = true
         
         // when
-        stub.download()
+        mock.download()
             .sink(receiveCompletion: { _ in },
                   receiveValue: { value in
                     if value == 100 {
@@ -97,10 +97,10 @@ extension StubTests {
     func testStub_stubResultAndGetAnswer() {
         // given
         let result: Result<Int, Error> = .success(2)
-        self.stub.stubResult("result", result: result)
+        self.mock.registerResult("result", result: result)
         
         // when
-        let answer: Result<Int, Error> = self.stub.answer("result", fallback: .failure(self.dummyError))
+        let answer: Result<Int, Error> = self.mock.resolve("result", fallback: .failure(self.dummyError))
         
         // then
         if case let .success(value) = answer, value == 2 {
@@ -114,10 +114,10 @@ extension StubTests {
         // given
         let expect = expectation(description: "get answer stubbed value as future")
         let future: Future<Int, Error> = .init{ $0(.success(2)) }
-        self.stub.stubFuture("future", future: future)
+        self.mock.registerFuture("future", future: future)
         
         // when
-        let answer: Future<Int, Error> = self.stub.answer("future", fallback: .init{ $0(.failure(self.dummyError)) })
+        let answer: Future<Int, Error> = self.mock.resolve("future", fallback: .init{ $0(.failure(self.dummyError)) })
         
         // then
         _ = answer
@@ -131,12 +131,12 @@ extension StubTests {
 }
 
 
-extension StubTests {
+extension MockingTests {
     
-    class StubObject: Stubbale {
+    class MockObject: Mocking {
         
         func download() -> AnyPublisher<Int, Error> {
-            return self.answer("download") ?? Empty().eraseToAnyPublisher()
+            return self.resolve("download") ?? Empty().eraseToAnyPublisher()
         }
     }
 }
